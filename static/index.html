@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>INDEXP</title>
+    <link rel="stylesheet" href="index.css">
+  </head>
+  <body>
+    <div class="form">
+      <input type="search" id="query" class="input" placeholder="Search"/>
+      <button id="search" class="searchButton">Go!</button>
+    </div>
+    <div class="results" id="results">
+    </div>
+    <script>
+      function fetchResults() {
+        const query = document.getElementById('query').value;
+        fetch(`/search?query=${encodeURIComponent(query)}`)
+          .then(response => response.json())
+          .then(data => {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = ''; 
+            console.log(data)
+            data.sort((a,b) => b.score - a.score);
+            data.forEach((result) => {
+              if (result.score != 0) {
+                const resultDiv = document.createElement('div');
+                resultDiv.classList.add('result');
+                title = document.createTextNode(`${result.filepath}`);
+
+                a = document.createElement(`a`)
+                a.href = `file:///${result.filepath}`;
+                a.appendChild(title)
+
+                score = document.createElement("div");
+                scoreText = document.createTextNode(`${result.score}`)
+                score.appendChild(scoreText)
+
+                time = document.createElement("div");
+                timeText = document.createTextNode(`${result.indexedAt}`)
+                time.appendChild(timeText)
+
+                resultDiv.appendChild(a);
+                resultDiv.appendChild(score);
+                resultDiv.appendChild(time);
+
+                resultsDiv.appendChild(resultDiv);
+              }
+            })
+          })
+        .catch(error => console.error('Error fetching data:', error));
+      }
+      document.getElementById('search').addEventListener('click', fetchResults);
+      document.getElementById('query').addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+          fetchResults();
+        }});
+    </script>
+  </body>
+</html>
