@@ -1,14 +1,16 @@
-package main
+package server
 
 import (
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/xunterr/indexp/indexer"
 )
 
 type Server struct {
-	index *Index
+	index *indexer.Index
 }
 
 type SearchResult struct {
@@ -18,7 +20,7 @@ type SearchResult struct {
 	LastIndexed string  `json:"indexedAt"`
 }
 
-func NewServer(index *Index) *Server {
+func NewServer(index *indexer.Index) *Server {
 	return &Server{
 		index: index,
 	}

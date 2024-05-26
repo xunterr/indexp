@@ -1,4 +1,4 @@
-package main
+package indexer
 
 import (
 	"crypto/md5"
@@ -24,11 +24,26 @@ type Index struct {
 	idfTable map[string]float64
 }
 
-func NewIndex() *Index {
+func NewEmptyIndex() *Index {
 	return &Index{
 		corpus:   make(Corpus),
 		idfTable: make(map[string]float64),
 	}
+}
+
+func NewIndexFrom(corpus Corpus, idfTable map[string]float64) *Index {
+	return &Index{
+		corpus:   corpus,
+		idfTable: idfTable,
+	}
+}
+
+func (index Index) GetCorpus() Corpus {
+	return index.corpus
+}
+
+func (index Index) GetIDFTable() map[string]float64 {
+	return index.idfTable
 }
 
 func (index *Index) IndexDoc(path string) Document {
