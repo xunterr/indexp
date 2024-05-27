@@ -9,6 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/xunterr/indexp/tokenizer"
 )
 
 type Document struct {
@@ -35,7 +37,7 @@ func (index *Index) IndexDoc(path string) Document {
 		return Document{}
 	}
 	checksum := md5.Sum(data)
-	tokenizer := NewTokenizer(data)
+	tokenizer := tokenizer.NewTokenizer(data)
 	occurences := make(map[string]int)
 	for {
 		token, err := tokenizer.ScanToken()
@@ -64,7 +66,7 @@ func (index *Index) IndexDoc(path string) Document {
 }
 
 func (index Index) Query(request string) map[string]float64 {
-	tokenizer := NewTokenizer([]byte(request))
+	tokenizer := tokenizer.NewTokenizer([]byte(request))
 	tokens, err := tokenizer.ScanAll()
 	if err != nil {
 		return nil

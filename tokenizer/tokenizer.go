@@ -1,8 +1,11 @@
-package indexer
+package tokenizer
 
 import (
 	"io"
 	"strings"
+
+	snowball "github.com/snowballstem/snowball/go"
+	"github.com/xunterr/indexp/tokenizer/english"
 )
 
 type Predicate func(b byte) bool
@@ -36,10 +39,12 @@ func (t *Tokenizer) ScanToken() (string, error) {
 	case '\t':
 		break
 	default:
-		if isDigit(c) {
-			result = t.scanWhile(isDigit)
-		} else if isAlfa(c) {
-			result = t.scanWhile(isAlfa)
+		if isDigit(c) || isAlfa(c) {
+			result = t.scanWhile(func(b byte) bool {
+				return isDigit(b) || isAlfa(b)
+			})
+		} else {
+			result = string(c)
 		}
 	}
 	return strings.ToLower(result), nil
@@ -67,8 +72,9 @@ func (t *Tokenizer) scanWhile(predicate Predicate) string {
 		t.current++
 	}
 	res := string(t.source[t.start:t.current])
-
-	return res
+	env := snowball.NewEnv(res)
+	english.Stem(env)
+	return env.Current()
 }
 
 func (t *Tokenizer) peek() byte {
