@@ -2,7 +2,6 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -37,11 +36,10 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 			doc := s.index.Corpus[path]
 			time := doc.IndexedAt
 			results = append(results, SearchResult{
-				Filepath: path,
-				Checksum: doc.Checksum,
-				LastIndexed: fmt.Sprintf("%d-%d-%d %d:%d",
-					time.Day(), time.Month(), time.Year(), time.Hour(), time.Minute()),
-				Score: score,
+				Filepath:    path,
+				Checksum:    doc.Checksum,
+				LastIndexed: time.Format("2006-01-02 15:04:05"),
+				Score:       score,
 			})
 		}
 	}

@@ -1,13 +1,10 @@
 package indexer
 
 import (
-	"bufio"
 	"crypto/md5"
-	"errors"
+	"encoding/hex"
 	"io"
-	"log"
 	"math"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -21,22 +18,18 @@ type Document struct {
 }
 
 type Index struct {
-	Corpus   map[string]Document
-	IdfTable map[string]float64
+	Corpus        map[string]Document
+	DocOccurences map[string]int
 }
 
 func NewEmptyIndex() *Index {
 	return &Index{
-		Corpus:   make(map[string]Document),
-		IdfTable: make(map[string]float64),
+		Corpus:        make(map[string]Document),
+		DocOccurences: make(map[string]int),
 	}
 }
 
-func (index *Index) IndexDoc(path string) Document {
-	data, err := ReadFile(path)
-	if err != nil {
-		return Document{}
-	}
+func (index *Index) IndexDoc(path string, data []byte) Document {
 	checksum := md5.Sum(data)
 	tokenizer := tokenizer.NewTokenizer(data)
 	occurences := make(map[string]int)
@@ -49,20 +42,24 @@ func (index *Index) IndexDoc(path string) Document {
 			return Document{}
 		}
 		if token != "" {
+			if _, ok := occurences[token]; !ok {
+				docOcc := index.DocOccurences[token]
+				index.DocOccurences[token] = docOcc + 1
+			}
+
 			freq := occurences[token]
 			occurences[token] = freq + 1
 		}
 	}
 	tf := CalcDocTF(occurences)
 	doc := Document{
-		Checksum:  string(checksum[:]),
+		Checksum:  hex.EncodeToString(checksum[:]),
 		Tf:        tf,
 		IndexedAt: time.Now(),
 	}
 
 	abs, _ := filepath.Abs(path)
 	index.Corpus[abs] = doc
-	index.IdfTable = index.calculateIDF()
 	return doc
 }
 
@@ -78,45 +75,12 @@ func (index Index) Query(request string) map[string]float64 {
 		docScore := float64(0)
 		for _, token := range tokens {
 			if tf, ok := doc.Tf[token]; ok {
-				idf, ok := index.IdfTable[token]
-				if !ok {
-					continue
-				}
-				docScore += tf * idf
+				docScore += tf * index.termIDF(token)
 			}
 		}
 		score[path] = docScore
 	}
 	return score
-}
-
-func (i Index) calculateIDF() map[string]float64 {
-	unique := i.getUniqueTerms()
-	docFreq := make(map[string]float64)
-	for _, term := range unique {
-		docFreq[term] = i.termIDF(term)
-	}
-	return docFreq
-}
-
-func ReadFile(filename string) ([]byte, error) {
-	fd, err := os.Open(filename)
-	defer fd.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	buff := bufio.NewReader(fd)
-	if hasExt(fd.Name(), []string{".txt", ".csv", ".md", ".json"}) {
-		data, err := io.ReadAll(buff)
-		if err != nil {
-			log.Fatalf("Error reading file: %s", err.Error())
-			return nil, err
-		}
-		return data, nil
-	} else {
-		return nil, errors.New("File extension is not supported! Skipping")
-	}
 }
 
 func CalcDocTF(occurences map[string]int) map[string]float64 {
@@ -134,39 +98,9 @@ func CalcDocTF(occurences map[string]int) map[string]float64 {
 	return tf
 }
 
-func hasExt(path string, extensions []string) (ok bool) {
-	hasExt := false
-	fileExt := filepath.Ext(path)
-	for _, ext := range extensions {
-		if hasExt {
-			break
-		}
-		hasExt = ext == fileExt
-	}
-
-	return hasExt
-}
-
-func TermFreqInSet(term string, occurences map[string]uint) float64 {
-	var termsNum uint = 0
-	for _, v := range occurences {
-		termsNum += v
-	}
-
-	freq, _ := occurences[term]
-	normalizedFreq := float64(freq) / float64(termsNum)
-	return normalizedFreq
-}
-
 func (i Index) termIDF(term string) float64 {
-	docFreq := 0
-	for _, doc := range i.Corpus {
-		if _, ok := doc.Tf[term]; ok {
-			docFreq++
-		}
-	}
-
-	return math.Log(float64(len(i.Corpus)) / float64(docFreq))
+	docOcc := i.DocOccurences[term]
+	return math.Log(float64(len(i.Corpus)) / float64(docOcc))
 }
 
 func (i Index) getUniqueTerms() []string {

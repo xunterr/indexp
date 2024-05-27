@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"bufio"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"log"
 	"os"
@@ -69,7 +72,7 @@ func Run(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
-	err = utils.SaveJSON[map[string]float64]("idf.json", index.IdfTable)
+	err = utils.SaveJSON[map[string]int]("do.json", index.DocOccurences)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
@@ -102,7 +105,44 @@ func Walk(wg *sync.WaitGroup, ctx context.Context, start_path string, index *ind
 			return nil
 		}
 
-		index.IndexDoc(path)
+		data, err := ReadFile(path)
+		if err == nil {
+			index.IndexDoc(path, data)
+		}
+
 		return nil
 	})
+}
+
+func ReadFile(filename string) ([]byte, error) {
+	fd, err := os.Open(filename)
+	defer fd.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	buff := bufio.NewReader(fd)
+	if hasExt(fd.Name(), []string{".txt", ".csv", ".md", ".json", ".xml"}) {
+		data, err := io.ReadAll(buff)
+		if err != nil {
+			log.Fatalf("Error reading file: %s", err.Error())
+			return nil, err
+		}
+		return data, nil
+	} else {
+		return nil, errors.New("File extension is not supported! Skipping")
+	}
+}
+
+func hasExt(path string, extensions []string) (ok bool) {
+	hasExt := false
+	fileExt := filepath.Ext(path)
+	for _, ext := range extensions {
+		if hasExt {
+			break
+		}
+		hasExt = ext == fileExt
+	}
+
+	return hasExt
 }

@@ -25,14 +25,14 @@ var serverCmd = &cobra.Command{
 			log.Fatalln(err.Error())
 		}
 
-		idf, err := utils.LoadJSON[map[string]float64]("idf.json")
+		docOcc, err := utils.LoadJSON[map[string]int]("do.json")
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
 
 		index := &indexer.Index{
-			Corpus:   *corpus,
-			IdfTable: *idf,
+			Corpus:        *corpus,
+			DocOccurences: *docOcc,
 		}
 		server := server.NewServer(index)
 		http.HandleFunc("/search", server.Search)

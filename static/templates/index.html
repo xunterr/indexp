@@ -9,7 +9,7 @@
   </head>
   <body>
     <div class="searchBar">
-      <div class="stats">Total documets: {{.TotalDocs}}</div>
+      <div class="stats">Total documents: {{.TotalDocs}}</div>
       <div class="form">
         <input type="search" id="query" class="input" placeholder="Search"/>
         <button id="search" class="searchButton">Go!</button>
@@ -31,23 +31,24 @@
               if (result.score != 0) {
                 const resultDiv = document.createElement('div');
                 resultDiv.classList.add('result');
-                title = document.createTextNode(`${result.filepath}`);
 
                 a = document.createElement(`a`)
                 a.href = `file:///${result.filepath}`;
-                a.appendChild(title)
+                a.textContent = result.filepath
 
                 score = document.createElement("div");
-                scoreText = document.createTextNode(`${result.score}`)
-                score.appendChild(scoreText)
+                score.textContent = result.score
 
                 time = document.createElement("div");
-                timeText = document.createTextNode(`${result.indexedAt}`)
-                time.appendChild(timeText)
+                time.textContent = result.indexedAt
+
+                checksum = document.createElement("div");
+                checksum.textContent = result.checksum
 
                 resultDiv.appendChild(a);
                 resultDiv.appendChild(score);
                 resultDiv.appendChild(time);
+                resultDiv.appendChild(checksum)
 
                 resultsDiv.appendChild(resultDiv);
               }
