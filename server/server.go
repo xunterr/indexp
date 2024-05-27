@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/xunterr/indexp/indexer"
@@ -33,7 +32,7 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 	var results []SearchResult
 	for path, score := range scores {
 		if score != 0 {
-			doc := s.index.GetDoc(path)
+			doc := s.index.Corpus[path]
 			time := doc.IndexedAt
 			results = append(results, SearchResult{
 				Filepath: path,
@@ -44,6 +43,5 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 	}
-	log.Printf("%v", results)
 	json.NewEncoder(w).Encode(results)
 }

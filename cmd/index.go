@@ -7,7 +7,10 @@ import (
 	"io/fs"
 	"log"
 	"path/filepath"
+	"sync"
+	"time"
 
+	"github.com/briandowns/spinner"
 	"github.com/spf13/cobra"
 	"github.com/xunterr/indexp/indexer"
 	"github.com/xunterr/indexp/utils"
@@ -24,18 +27,28 @@ var indexCmd = &cobra.Command{
 	Short: "Index a directory",
 	Run: func(cmd *cobra.Command, args []string) {
 		index := indexer.NewEmptyIndex()
-		err := Walk(index)
+		var wg sync.WaitGroup
+		s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
+		s.Prefix = "|---Indexing---|\t"
+		s.Start()
+
+		start := time.Now()
+		err := Walk(&wg, START_PATH, index)
+		wg.Wait()
+		elapsed := time.Since(start)
+
+		s.Stop()
 		if err != nil {
 			log.Fatalf(err.Error())
 			return
 		}
 
-		log.Println("Indexed! Saving...")
-		err = utils.SaveJSON[indexer.Corpus]("corpus.json", index.GetCorpus())
+		log.Printf("Indexing ended in %d ms! Saving...", elapsed.Milliseconds())
+		err = utils.SaveJSON[map[string]indexer.Document]("corpus.json", index.Corpus)
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
-		err = utils.SaveJSON[map[string]float64]("idf.json", index.GetIDFTable())
+		err = utils.SaveJSON[map[string]float64]("idf.json", index.IdfTable)
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
@@ -43,20 +56,25 @@ var indexCmd = &cobra.Command{
 }
 
 func init() {
+	// indexCmd.PersistentFlags().String("foo", "", "A help for foo")
+	indexCmd.Flags().StringVarP(&START_PATH, "path", "p", START_PATH, "starting point")
+	indexCmd.Flags().BoolVarP(&IS_RECURSIVE, "recursive", "r", IS_RECURSIVE, "starting point")
 	rootCmd.AddCommand(indexCmd)
 
-	// indexCmd.PersistentFlags().String("foo", "", "A help for foo")
-	START_PATH = *indexCmd.Flags().StringP("path", "p", START_PATH, "starting point")
-	IS_RECURSIVE = *indexCmd.Flags().BoolP("recursive", "r", IS_RECURSIVE, "starting point")
 }
 
-func Walk(index *indexer.Index) error {
-	return filepath.WalkDir(START_PATH, func(path string, d fs.DirEntry, err error) error {
+func Walk(wg *sync.WaitGroup, start_path string, index *indexer.Index) error {
+	return filepath.WalkDir(start_path, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if d.IsDir() && IS_RECURSIVE {
-			return Walk(index)
+			wg.Add(1)
+			go func() {
+				Walk(wg, path, index)
+				wg.Done()
+			}()
+			return nil
 		}
 
 		index.IndexDoc(path)

@@ -17,33 +17,16 @@ type Document struct {
 	IndexedAt time.Time
 }
 
-type Corpus map[string]Document
-
 type Index struct {
-	corpus   Corpus
-	idfTable map[string]float64
+	Corpus   map[string]Document
+	IdfTable map[string]float64
 }
 
 func NewEmptyIndex() *Index {
 	return &Index{
-		corpus:   make(Corpus),
-		idfTable: make(map[string]float64),
+		Corpus:   make(map[string]Document),
+		IdfTable: make(map[string]float64),
 	}
-}
-
-func NewIndexFrom(corpus Corpus, idfTable map[string]float64) *Index {
-	return &Index{
-		corpus:   corpus,
-		idfTable: idfTable,
-	}
-}
-
-func (index Index) GetCorpus() Corpus {
-	return index.corpus
-}
-
-func (index Index) GetIDFTable() map[string]float64 {
-	return index.idfTable
 }
 
 func (index *Index) IndexDoc(path string) Document {
@@ -75,13 +58,9 @@ func (index *Index) IndexDoc(path string) Document {
 	}
 
 	abs, _ := filepath.Abs(path)
-	index.corpus[abs] = doc
-	index.idfTable = index.corpus.CalculateIDF()
+	index.Corpus[abs] = doc
+	index.IdfTable = index.calculateIDF()
 	return doc
-}
-
-func (index Index) GetDoc(path string) Document {
-	return index.corpus[path]
 }
 
 func (index Index) Query(request string) map[string]float64 {
@@ -92,11 +71,11 @@ func (index Index) Query(request string) map[string]float64 {
 	}
 
 	score := make(map[string]float64)
-	for path, doc := range index.corpus {
+	for path, doc := range index.Corpus {
 		docScore := float64(0)
 		for _, token := range tokens {
 			if tf, ok := doc.Tf[token]; ok {
-				idf, ok := index.idfTable[token]
+				idf, ok := index.IdfTable[token]
 				if !ok {
 					continue
 				}
@@ -108,11 +87,11 @@ func (index Index) Query(request string) map[string]float64 {
 	return score
 }
 
-func (c Corpus) CalculateIDF() map[string]float64 {
-	unique := c.GetUniqueTerms()
+func (i Index) calculateIDF() map[string]float64 {
+	unique := i.getUniqueTerms()
 	docFreq := make(map[string]float64)
 	for _, term := range unique {
-		docFreq[term] = c.GetTermIDF(term)
+		docFreq[term] = i.termIDF(term)
 	}
 	return docFreq
 }
@@ -175,20 +154,20 @@ func TermFreqInSet(term string, occurences map[string]uint) float64 {
 	return normalizedFreq
 }
 
-func (c Corpus) GetTermIDF(term string) float64 {
+func (i Index) termIDF(term string) float64 {
 	docFreq := 0
-	for _, doc := range c {
+	for _, doc := range i.Corpus {
 		if _, ok := doc.Tf[term]; ok {
 			docFreq++
 		}
 	}
 
-	return math.Log(float64(len(c)) / float64(docFreq))
+	return math.Log(float64(len(i.Corpus)) / float64(docFreq))
 }
 
-func (c Corpus) GetUniqueTerms() []string {
+func (i Index) getUniqueTerms() []string {
 	var unique []string
-	for _, doc := range c {
+	for _, doc := range i.Corpus {
 		for term := range doc.Tf {
 			unique = append(unique, term)
 		}

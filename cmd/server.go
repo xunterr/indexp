@@ -20,7 +20,7 @@ var serverCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Start a server",
 	Run: func(cmd *cobra.Command, args []string) {
-		corpus, err := utils.LoadJSON[indexer.Corpus]("corpus.json")
+		corpus, err := utils.LoadJSON[map[string]indexer.Document]("corpus.json")
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
@@ -30,7 +30,10 @@ var serverCmd = &cobra.Command{
 			log.Fatalln(err.Error())
 		}
 
-		index := indexer.NewIndexFrom(*corpus, *idf)
+		index := &indexer.Index{
+			Corpus:   *corpus,
+			IdfTable: *idf,
+		}
 		server := server.NewServer(index)
 		http.HandleFunc("/search", server.Search)
 		http.Handle("/", http.FileServer(http.Dir("./static")))
