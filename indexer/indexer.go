@@ -1,6 +1,7 @@
 package indexer
 
 import (
+	"bufio"
 	"crypto/md5"
 	"errors"
 	"io"
@@ -105,8 +106,9 @@ func ReadFile(filename string) ([]byte, error) {
 		return nil, err
 	}
 
+	buff := bufio.NewReader(fd)
 	if hasExt(fd.Name(), []string{".txt", ".csv", ".md", ".json"}) {
-		data, err := io.ReadAll(fd)
+		data, err := io.ReadAll(buff)
 		if err != nil {
 			log.Fatalf("Error reading file: %s", err.Error())
 			return nil, err

@@ -3,6 +3,8 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
+	"log"
 	"net/http"
 
 	"github.com/xunterr/indexp/indexer"
@@ -44,4 +46,19 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	json.NewEncoder(w).Encode(results)
+}
+
+func (s *Server) Stats(w http.ResponseWriter, r *http.Request) {
+	stats := struct {
+		TotalDocs int
+	}{len(s.index.Corpus)}
+	t, err := template.ParseFiles("static/templates/index.html")
+	if err != nil {
+		log.Printf("Error executing template: %s", err.Error())
+		return
+	}
+	err = t.Execute(w, stats)
+	if err != nil {
+		log.Printf("Error executing template: %s", err.Error())
+	}
 }

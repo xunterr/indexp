@@ -5,12 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>INDEXP</title>
-    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="/assets/index.css">
   </head>
   <body>
-    <div class="form">
-      <input type="search" id="query" class="input" placeholder="Search"/>
-      <button id="search" class="searchButton">Go!</button>
+    <div class="searchBar">
+      <div class="stats">Total documets: {{.TotalDocs}}</div>
+      <div class="form">
+        <input type="search" id="query" class="input" placeholder="Search"/>
+        <button id="search" class="searchButton">Go!</button>
+      </div>
     </div>
     <div class="results" id="results">
     </div>

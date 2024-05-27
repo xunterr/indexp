@@ -6,17 +6,31 @@ button:focus {
   box-shadow: none !important;
 }
 
+@font-face {   
+  font-family: "Roboto";   
+  src: url(fonts/Roboto-Regular.ttf);
+}
+
 .form{
     display: flex;
-    padding: 32px;
     gap:20px;
 }
 
+.searchBar{
+    padding: 32px;
+}
+
+.stats{
+  color: #c2c2c2;
+  font-size: 14px;
+  margin: 0px 0px 4px 4px;
+}
+
 .input{
-    background-color:#BFC0C0 ;
+    background-color: #BFC0C0;
     width: 70%;
     height: 100%;
-    border:#56667A 2px solid;
+    border: #56667A 2px solid;
     border-radius: 5px;
     font-size: 24px;
     padding: 8px;
@@ -28,7 +42,7 @@ button:focus {
     padding: 8px 16px;
     font-size: 20px;
     background-color: #959DA6;
-    border:#56667A 2px solid;
+    border: #56667A 2px solid;
     border-radius: 5px;
 }
 
@@ -54,4 +68,5 @@ a{
 
 body{
     background-color: #31363F;
+    font-family: Roboto;
 }
