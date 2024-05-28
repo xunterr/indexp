@@ -36,7 +36,7 @@ var serverCmd = &cobra.Command{
 		}
 		server := server.NewServer(index)
 		http.HandleFunc("/search", server.Search)
-		http.HandleFunc("/", server.Stats)
+		http.HandleFunc("/", server.IndexPage)
 		http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("static/assets"))))
 
 		err = http.ListenAndServe(fmt.Sprintf(":%d", PORT), nil)

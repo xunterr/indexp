@@ -32,6 +32,9 @@
                 const resultDiv = document.createElement('div');
                 resultDiv.classList.add('result');
 
+                title = document.createElement("h2");
+                title.textContent = result.title
+
                 a = document.createElement(`a`)
                 a.href = `file:///${result.filepath}`;
                 a.textContent = result.filepath
@@ -45,6 +48,7 @@
                 checksum = document.createElement("div");
                 checksum.textContent = result.checksum
 
+                resultDiv.appendChild(title);
                 resultDiv.appendChild(a);
                 resultDiv.appendChild(score);
                 resultDiv.appendChild(time);

@@ -8,10 +8,12 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/xunterr/indexp/file"
 	"github.com/xunterr/indexp/tokenizer"
 )
 
 type Document struct {
+	Title     string
 	Checksum  string
 	Tf        map[string]float64
 	IndexedAt time.Time
@@ -29,9 +31,10 @@ func NewEmptyIndex() *Index {
 	}
 }
 
-func (index *Index) IndexDoc(path string, data []byte) Document {
-	checksum := md5.Sum(data)
-	tokenizer := tokenizer.NewTokenizer(data)
+func (index *Index) IndexDoc(path string, file *file.File) {
+	checksum := md5.Sum(file.Data)
+
+	tokenizer := tokenizer.NewTokenizer(file.Data)
 	occurences := make(map[string]int)
 	for {
 		token, err := tokenizer.ScanToken()
@@ -39,7 +42,6 @@ func (index *Index) IndexDoc(path string, data []byte) Document {
 			if err == io.EOF {
 				break
 			}
-			return Document{}
 		}
 		if token != "" {
 			if _, ok := occurences[token]; !ok {
@@ -51,8 +53,11 @@ func (index *Index) IndexDoc(path string, data []byte) Document {
 			occurences[token] = freq + 1
 		}
 	}
-	tf := CalcDocTF(occurences)
+	tf := calcDocTF(occurences)
+	fileName := file.Info.Name()
+	title := fileName[:len(fileName)-len(filepath.Ext(fileName))]
 	doc := Document{
+		Title:     title,
 		Checksum:  hex.EncodeToString(checksum[:]),
 		Tf:        tf,
 		IndexedAt: time.Now(),
@@ -60,7 +65,6 @@ func (index *Index) IndexDoc(path string, data []byte) Document {
 
 	abs, _ := filepath.Abs(path)
 	index.Corpus[abs] = doc
-	return doc
 }
 
 func (index Index) Query(request string) map[string]float64 {
@@ -75,7 +79,7 @@ func (index Index) Query(request string) map[string]float64 {
 		docScore := float64(0)
 		for _, token := range tokens {
 			if tf, ok := doc.Tf[token]; ok {
-				docScore += tf * index.termIDF(token)
+				docScore += tf * index.calcDocIdf(token)
 			}
 		}
 		score[path] = docScore
@@ -83,7 +87,7 @@ func (index Index) Query(request string) map[string]float64 {
 	return score
 }
 
-func CalcDocTF(occurences map[string]int) map[string]float64 {
+func calcDocTF(occurences map[string]int) map[string]float64 {
 	tf := make(map[string]float64)
 	tokensNum := 0
 	for _, occNum := range occurences {
@@ -98,7 +102,7 @@ func CalcDocTF(occurences map[string]int) map[string]float64 {
 	return tf
 }
 
-func (i Index) termIDF(term string) float64 {
+func (i Index) calcDocIdf(term string) float64 {
 	docOcc := i.DocOccurences[term]
 	return math.Log(float64(len(i.Corpus)) / float64(docOcc))
 }

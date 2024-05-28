@@ -33,11 +33,7 @@ func (t *Tokenizer) ScanToken() (string, error) {
 	t.current++
 	result := ""
 	switch c {
-	case '\n':
-	case ' ':
-	case '\r':
-	case '\t':
-		break
+	case '\n', ' ', '\r', '\t':
 	default:
 		if isDigit(c) || isAlfa(c) {
 			result = t.scanWhile(func(b byte) bool {
