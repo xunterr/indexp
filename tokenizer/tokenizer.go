@@ -13,7 +13,13 @@ type Predicate func(b byte) bool
 type Tokenizer struct {
 	source  []byte
 	start   int
+	line    int
 	current int
+}
+
+type Token struct {
+	Literal string
+	Line    int
 }
 
 func NewTokenizer(source []byte) *Tokenizer {
@@ -21,19 +27,22 @@ func NewTokenizer(source []byte) *Tokenizer {
 		source:  source,
 		start:   0,
 		current: 0,
+		line:    1,
 	}
 }
 
-func (t *Tokenizer) ScanToken() (string, error) {
+func (t *Tokenizer) ScanToken() (Token, error) {
 	if t.isAtEnd() {
-		return "", io.EOF
+		return Token{}, io.EOF
 	}
 	t.start = t.current
 	c := t.source[t.current]
 	t.current++
 	result := ""
 	switch c {
-	case '\n', ' ', '\r', '\t':
+	case '\n':
+		t.line++
+	case ' ', '\r', '\t':
 	default:
 		if isDigit(c) || isAlfa(c) {
 			result = t.scanWhile(func(b byte) bool {
@@ -43,10 +52,13 @@ func (t *Tokenizer) ScanToken() (string, error) {
 			result = string(c)
 		}
 	}
-	return strings.ToLower(result), nil
+	return Token{
+		Literal: strings.ToLower(result),
+		Line:    t.line,
+	}, nil
 }
 
-func (t *Tokenizer) ScanAll() (tokens []string, err error) {
+func (t *Tokenizer) ScanAll() (tokens []Token, err error) {
 	for {
 		token, scanErr := t.ScanToken()
 		if scanErr != nil {
@@ -56,7 +68,7 @@ func (t *Tokenizer) ScanAll() (tokens []string, err error) {
 			err = scanErr
 			return
 		}
-		if token != "" {
+		if token.Literal != "" {
 			tokens = append(tokens, token)
 		}
 	}

@@ -31,8 +31,8 @@ var serverCmd = &cobra.Command{
 		}
 
 		index := &indexer.Index{
-			Corpus:        *corpus,
-			DocOccurences: *docOcc,
+			Corpus:         *corpus,
+			DocOccurrences: *docOcc,
 		}
 		server := server.NewServer(index)
 		http.HandleFunc("/search", server.Search)

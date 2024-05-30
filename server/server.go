@@ -5,7 +5,9 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"sort"
 
+	"github.com/xunterr/indexp/file"
 	"github.com/xunterr/indexp/indexer"
 )
 
@@ -18,6 +20,7 @@ type SearchResult struct {
 	Filepath    string  `json:"filepath"`
 	Score       float64 `json:"score"`
 	Checksum    string  `json:"checksum"`
+	Snippet     string  `json:"snippet"`
 	LastIndexed string  `json:"indexedAt"`
 }
 
@@ -31,21 +34,44 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	query := r.URL.Query().Get("query")
 	scores := s.index.Query(query)
+
+	keys := make([]string, 0, len(scores))
+	for key := range scores {
+		keys = append(keys, key)
+	}
+	sort.Slice(keys, func(i, j int) bool { return scores[keys[i]].Score > scores[keys[j]].Score })
+
 	var results []SearchResult
-	for path, score := range scores {
-		if score != 0 {
-			doc := s.index.Corpus[path]
+	for i, key := range keys {
+		score := scores[key]
+		if score.Score != 0 {
+			doc := s.index.Corpus[key]
 			time := doc.IndexedAt
+
+			snippet := ""
+			if i <= 5 {
+				snippet, _ = getSnippet(key, score)
+			}
 			results = append(results, SearchResult{
 				Title:       doc.Title,
-				Filepath:    path,
+				Filepath:    key,
 				Checksum:    doc.Checksum,
 				LastIndexed: time.Format("2006-01-02 15:04:05"),
-				Score:       score,
+				Score:       score.Score,
+				Snippet:     snippet,
 			})
 		}
 	}
 	json.NewEncoder(w).Encode(results)
+}
+
+func getSnippet(path string, score indexer.Score) (string, error) {
+	var lines []int
+	for _, freq := range score.Tf {
+		lines = append(lines, freq.FirstOccLine)
+	}
+
+	return file.GetSnippet(path, lines)
 }
 
 func (s *Server) IndexPage(w http.ResponseWriter, r *http.Request) {

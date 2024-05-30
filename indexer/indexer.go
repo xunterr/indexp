@@ -15,95 +15,118 @@ import (
 type Document struct {
 	Title     string
 	Checksum  string
-	Tf        map[string]float64
+	Tf        map[string]TermFreq
 	IndexedAt time.Time
 }
 
+type TermFreq struct {
+	Freq         float64
+	FirstOccLine int
+}
+
+type Score struct {
+	Score float64
+	Tf    map[string]TermFreq
+}
+
+type TermOccurrences struct {
+	Num          int
+	FirstOccLine int
+}
+
 type Index struct {
-	Corpus        map[string]Document
-	DocOccurences map[string]int
+	Corpus         map[string]Document
+	DocOccurrences map[string]int
 }
 
 func NewEmptyIndex() *Index {
 	return &Index{
-		Corpus:        make(map[string]Document),
-		DocOccurences: make(map[string]int),
+		Corpus:         make(map[string]Document),
+		DocOccurrences: make(map[string]int),
 	}
 }
 
 func (index *Index) IndexDoc(path string, file *file.File) {
 	checksum := md5.Sum(file.Data)
+	tokensNum, occurrences := index.toTokens(file.Data)
 
-	tokenizer := tokenizer.NewTokenizer(file.Data)
-	occurences := make(map[string]int)
+	tf := make(map[string]TermFreq, len(occurrences))
+	for token, occ := range occurrences {
+		docOcc := index.DocOccurrences[token]
+		index.DocOccurrences[token] = docOcc + 1
+
+		tf[token] = TermFreq{
+			Freq:         calcTF(occ.Num, tokensNum),
+			FirstOccLine: occ.FirstOccLine,
+		}
+	}
+
+	abs, _ := filepath.Abs(path)
+	index.Corpus[abs] = Document{
+		Title:     file.Title,
+		Checksum:  hex.EncodeToString(checksum[:]),
+		Tf:        tf,
+		IndexedAt: time.Now(),
+	}
+}
+
+func (index Index) toTokens(data []byte) (tokensNum int, occurrences map[string]TermOccurrences) {
+	occurrences = map[string]TermOccurrences{}
+	tokenizer := tokenizer.NewTokenizer(data)
+
 	for {
 		token, err := tokenizer.ScanToken()
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
+			continue
 		}
-		if token != "" {
-			if _, ok := occurences[token]; !ok {
-				docOcc := index.DocOccurences[token]
-				index.DocOccurences[token] = docOcc + 1
+		if token.Literal != "" {
+			if occ, ok := occurrences[token.Literal]; !ok {
+				occurrences[token.Literal] = TermOccurrences{1, token.Line}
+			} else {
+				occ.Num++
+				occurrences[token.Literal] = occ
 			}
-
-			freq := occurences[token]
-			occurences[token] = freq + 1
+			tokensNum++
 		}
 	}
-	tf := calcDocTF(occurences)
-	fileName := file.Info.Name()
-	title := fileName[:len(fileName)-len(filepath.Ext(fileName))]
-	doc := Document{
-		Title:     title,
-		Checksum:  hex.EncodeToString(checksum[:]),
-		Tf:        tf,
-		IndexedAt: time.Now(),
-	}
 
-	abs, _ := filepath.Abs(path)
-	index.Corpus[abs] = doc
+	return
 }
 
-func (index Index) Query(request string) map[string]float64 {
+func (index Index) Query(request string) map[string]Score {
 	tokenizer := tokenizer.NewTokenizer([]byte(request))
 	tokens, err := tokenizer.ScanAll()
 	if err != nil {
 		return nil
 	}
 
-	score := make(map[string]float64)
+	scores := make(map[string]Score)
 	for path, doc := range index.Corpus {
-		docScore := float64(0)
+		var docScore float64
+		reqTf := make(map[string]TermFreq)
 		for _, token := range tokens {
-			if tf, ok := doc.Tf[token]; ok {
-				docScore += tf * index.calcDocIdf(token)
+			if tf, ok := doc.Tf[token.Literal]; ok {
+				docScore += tf.Freq * index.calcDocIdf(token.Literal)
+				reqTf[token.Literal] = tf
 			}
 		}
-		score[path] = docScore
-	}
-	return score
-}
-
-func calcDocTF(occurences map[string]int) map[string]float64 {
-	tf := make(map[string]float64)
-	tokensNum := 0
-	for _, occNum := range occurences {
-		tokensNum += occNum
-	}
-
-	for token, occNum := range occurences {
-		if _, ok := tf[token]; !ok {
-			tf[token] = float64(occNum) / float64(tokensNum)
+		scores[path] = Score{
+			Score: docScore,
+			Tf:    reqTf,
 		}
 	}
-	return tf
+	return scores
+}
+
+func calcTF(termOcc int, termsNum int) float64 {
+	return float64(termOcc) / float64(termsNum)
 }
 
 func (i Index) calcDocIdf(term string) float64 {
-	docOcc := i.DocOccurences[term]
+	docOcc := i.DocOccurrences[term]
 	return math.Log(float64(len(i.Corpus)) / float64(docOcc))
 }
 

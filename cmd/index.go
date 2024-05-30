@@ -69,7 +69,7 @@ func Run(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
-	err = file.SaveJSON[map[string]int](INDEX_FILES[1], index.DocOccurences)
+	err = file.SaveJSON[map[string]int](INDEX_FILES[1], index.DocOccurrences)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}

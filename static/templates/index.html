@@ -40,19 +40,23 @@
                 a.textContent = result.filepath
 
                 score = document.createElement("div");
-                score.textContent = result.score
+                score.textContent = "Score: " + result.score
 
                 time = document.createElement("div");
-                time.textContent = result.indexedAt
+                time.textContent = "Indexed at: " + result.indexedAt
 
                 checksum = document.createElement("div");
-                checksum.textContent = result.checksum
+                checksum.textContent = "Checksum: " + result.checksum
+
+                snippet = document.createElement("div");
+                snippet.textContent = result.snippet
 
                 resultDiv.appendChild(title);
                 resultDiv.appendChild(a);
                 resultDiv.appendChild(score);
                 resultDiv.appendChild(time);
                 resultDiv.appendChild(checksum)
+                resultDiv.appendChild(snippet)
 
                 resultsDiv.appendChild(resultDiv);
               }
