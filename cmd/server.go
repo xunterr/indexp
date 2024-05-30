@@ -7,9 +7,9 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/xunterr/indexp/file"
 	"github.com/xunterr/indexp/indexer"
 	"github.com/xunterr/indexp/server"
-	"github.com/xunterr/indexp/utils"
 )
 
 var (
@@ -20,12 +20,12 @@ var serverCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Start a server",
 	Run: func(cmd *cobra.Command, args []string) {
-		corpus, err := utils.LoadJSON[map[string]indexer.Document]("corpus.json")
+		corpus, err := file.LoadJSON[map[string]indexer.Document](INDEX_FILES[0])
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
 
-		docOcc, err := utils.LoadJSON[map[string]int]("do.json")
+		docOcc, err := file.LoadJSON[map[string]int](INDEX_FILES[1])
 		if err != nil {
 			log.Fatalln(err.Error())
 		}

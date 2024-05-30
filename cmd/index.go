@@ -15,7 +15,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/xunterr/indexp/file"
 	"github.com/xunterr/indexp/indexer"
-	"github.com/xunterr/indexp/utils"
 )
 
 var (
@@ -66,11 +65,11 @@ func Run(cmd *cobra.Command, args []string) {
 	}
 
 	log.Printf("Indexing ended in %d ms! Saving...", elapsed.Milliseconds())
-	err = utils.SaveJSON[map[string]indexer.Document]("corpus.json", index.Corpus)
+	err = file.SaveJSON[map[string]indexer.Document](INDEX_FILES[0], index.Corpus)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
-	err = utils.SaveJSON[map[string]int]("do.json", index.DocOccurences)
+	err = file.SaveJSON[map[string]int](INDEX_FILES[1], index.DocOccurences)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
