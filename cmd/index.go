@@ -65,11 +65,11 @@ func Run(cmd *cobra.Command, args []string) {
 	}
 
 	log.Printf("Indexing ended in %d ms! Saving...", elapsed.Milliseconds())
-	err = file.SaveJSON[map[string]indexer.Document](INDEX_FILES[0], index.Corpus)
+	err = file.SaveGOB[map[string]indexer.Document](INDEX_FILES[0], index.Corpus)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
-	err = file.SaveJSON[map[string]int](INDEX_FILES[1], index.DocOccurrences)
+	err = file.SaveGOB[map[string]int](INDEX_FILES[1], index.DocOccurrences)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}

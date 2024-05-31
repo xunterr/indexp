@@ -2,7 +2,6 @@ package file
 
 import (
 	"bufio"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -31,12 +30,11 @@ func ReadFile(path string) (*File, error) {
 	switch extension {
 	case ".txt", ".md", ".xml", ".csv", ".json":
 		data, err = bufferedRead(fd)
+		if err != nil {
+			return nil, err
+		}
 	default:
 		return nil, ErrNotSupported
-	}
-
-	if err != nil {
-		return nil, err
 	}
 
 	info, err := fd.Stat()
@@ -109,23 +107,4 @@ func rewrite(filename string, data []byte) error {
 	w := bufio.NewWriter(file)
 	_, err = w.Write(data)
 	return err
-}
-
-func SaveJSON[T any](filename string, data T) error {
-	json, err := json.Marshal(data)
-	if err != nil {
-		return err
-	}
-
-	return rewrite(filename, json)
-}
-
-func LoadJSON[T any](filename string) (*T, error) {
-	data, err := os.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-	var result T
-	err = json.Unmarshal(data, &result)
-	return &result, err
 }

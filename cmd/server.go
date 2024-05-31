@@ -20,19 +20,21 @@ var serverCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Start a server",
 	Run: func(cmd *cobra.Command, args []string) {
-		corpus, err := file.LoadJSON[map[string]indexer.Document](INDEX_FILES[0])
+		corpus := make(map[string]indexer.Document)
+		err := file.LoadGOB[map[string]indexer.Document](INDEX_FILES[0], &corpus)
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
 
-		docOcc, err := file.LoadJSON[map[string]int](INDEX_FILES[1])
+		docOcc := make(map[string]int)
+		err = file.LoadGOB[map[string]int](INDEX_FILES[1], &docOcc)
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
 
 		index := &indexer.Index{
-			Corpus:         *corpus,
-			DocOccurrences: *docOcc,
+			Corpus:         corpus,
+			DocOccurrences: docOcc,
 		}
 		server := server.NewServer(index)
 		http.HandleFunc("/search", server.Search)
