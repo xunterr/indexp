@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"sort"
+	"strconv"
 
 	"github.com/xunterr/indexp/file"
 	"github.com/xunterr/indexp/indexer"
@@ -32,8 +33,9 @@ func NewServer(index *indexer.Index) *Server {
 
 func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	query := r.URL.Query().Get("query")
-	scores := s.index.Query(query)
+	searchQuery := r.URL.Query().Get("query")
+	maxQuery := r.URL.Query().Get("max")
+	scores := s.index.Query(searchQuery)
 
 	keys := make([]string, 0, len(scores))
 	for key := range scores {
@@ -42,6 +44,18 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 	sort.Slice(keys, func(i, j int) bool { return scores[keys[i]].Score > scores[keys[j]].Score })
 
 	var results []SearchResult
+
+	if maxQuery != "" {
+		maxResults, err := strconv.Atoi(maxQuery)
+		if err != nil {
+			w.WriteHeader(400)
+			return
+		}
+
+		if len(keys) > maxResults && maxResults >= 0 {
+			keys = keys[:maxResults]
+		}
+	}
 	for i, key := range keys {
 		score := scores[key]
 		if score.Score != 0 {

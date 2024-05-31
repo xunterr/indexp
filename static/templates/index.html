@@ -14,18 +14,25 @@
         <input type="search" id="query" class="input" placeholder="Search"/>
         <button id="search" class="searchButton">Go!</button>
       </div>
+      <div style="maxResults">
+        <span style="color:#ffff;">Max number of results: </span>
+        <input type="number" id="max" value="25" class="maxInput"/>
+      </div>
     </div>
     <div class="results" id="results">
     </div>
     <script>
       function fetchResults() {
         const query = document.getElementById('query').value;
-        fetch(`/search?query=${encodeURIComponent(query)}`)
+        let max = document.getElementById('max').value;
+        if (max == "" || max == 0){
+          max = 25
+        }
+        fetch(`/search?query=${encodeURIComponent(query)}&max=${encodeURIComponent(max)}`)
           .then(response => response.json())
           .then(data => {
             const resultsDiv = document.getElementById('results');
             resultsDiv.innerHTML = ''; 
-            console.log(data)
             data.sort((a,b) => b.score - a.score);
             data.forEach((result) => {
               if (result.score != 0) {

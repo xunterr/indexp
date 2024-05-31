@@ -11,9 +11,29 @@ button:focus {
   src: url(fonts/Roboto-Regular.ttf);
 }
 
+input{
+  border: #56667A 2px solid;
+  border-radius: 5px;
+  background-color: #BFC0C0;
+}
+
 .form{
     display: flex;
     gap:20px;
+}
+
+.maxInput{
+  width: 64px;
+  height: 24px;
+  margin: 12px 0px;
+  font-size: 16px;
+  padding: 4px;
+}
+
+.maxResults{
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .searchBar{
@@ -27,11 +47,8 @@ button:focus {
 }
 
 .input{
-    background-color: #BFC0C0;
     width: 70%;
     height: 100%;
-    border: #56667A 2px solid;
-    border-radius: 5px;
     font-size: 24px;
     padding: 8px;
 }
